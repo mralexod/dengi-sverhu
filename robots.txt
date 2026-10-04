@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mralexod.github.io/dengi-sverhu/sitemap.xml

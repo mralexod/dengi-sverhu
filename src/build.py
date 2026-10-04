@@ -85,7 +85,32 @@ FULL = [("Книга", "167 страниц: 38 лазеек, тест, гран�
         ("Куда пойдут деньги до 2030", "14 трендов, на которые стоит ставить")]
 
 
+VERIFY_YANDEX = os.environ.get("YANDEX_VERIFICATION", "")
+VERIFY_GOOGLE = os.environ.get("GOOGLE_VERIFICATION", "")
+
+
+def ldjson():
+    import json
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "Book",
+        "name": "Деньги сверху",
+        "alternateName": "Деньги сверху. 38 лазеек к деньгам богатых для тех, кто начинает с нуля",
+        "author": {"@type": "Person", "name": "Ключник"},
+        "inLanguage": "ru",
+        "description": DESC,
+        "image": SITE_URL + COVER,
+        "url": SITE_URL,
+        "sameAs": [TG],
+    }, ensure_ascii=False)
+
+
 def page():
+    VERIFY = "".join([
+        f'<meta name="yandex-verification" content="{VERIFY_YANDEX}">' if VERIFY_YANDEX else "",
+        f'<meta name="google-site-verification" content="{VERIFY_GOOGLE}">' if VERIFY_GOOGLE else "",
+    ])
+    LDJSON = ldjson()
     badges = "".join(f'<span class="rounded-full border border-gold/40 px-4 py-1.5 font-display text-xs font-semibold uppercase tracking-[0.15em] text-gold-light">{b}</span>'
                      for b in ["Без вложений", "Без связей", "Без опыта", "Законно"])
     stats = "".join(f'<div><div class="font-display text-3xl font-extrabold text-navy md:text-4xl">{n}</div><div class="mt-1 text-sm text-ink-soft">{t}</div></div>' for n, t in STATS)
@@ -110,6 +135,11 @@ def page():
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0f1a24">
+<meta name="keywords" content="Ключник, Деньги сверху, книга Ключник, Деньги сверху Ключник, 38 лазеек, деньги богатых, заработок с нуля">
+<meta name="author" content="Ключник">
+<link rel="canonical" href="{SITE_URL}">
+{VERIFY}
+<script type="application/ld+json">{LDJSON}</script>
 <link rel="icon" type="image/png" href="{COVER}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -227,7 +257,7 @@ def page():
   <div class="mt-8 flex flex-wrap justify-center gap-3">{dl()}{tg()}</div>
 </div></section>
 
-<footer class="bg-navy-deep py-8 text-center font-display text-xs text-on-navy-soft">© 2026 Ключник · «Деньги сверху» · <a href="{TG}" target="_blank" rel="noopener" class="text-gold-light hover:text-gold">t.me/dengisverhu</a></footer>
+<footer class="bg-navy-deep py-8 text-center font-display text-xs text-on-navy-soft">Книга «Деньги сверху», автор — Ключник. © 2026 · <a href="{TG}" target="_blank" rel="noopener" class="text-gold-light hover:text-gold">t.me/dengisverhu</a></footer>
 </div>
 </body>
 </html>
@@ -237,4 +267,12 @@ def page():
 if __name__ == "__main__":
     with open(os.path.join(ROOT, "index.html"), "w", encoding="utf-8") as f:
         f.write(page())
+    with open(os.path.join(ROOT, "robots.txt"), "w", encoding="utf-8") as f:
+        f.write(f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}sitemap.xml\n")
+    from datetime import date
+    with open(os.path.join(ROOT, "sitemap.xml"), "w", encoding="utf-8") as f:
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n'
+                '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+                f'  <url><loc>{SITE_URL}</loc><lastmod>{date.today()}</lastmod><priority>1.0</priority></url>\n'
+                '</urlset>\n')
     print("index.html готов:", SITE_URL)
