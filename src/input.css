@@ -1,0 +1,56 @@
+@import 'tailwindcss';
+@source "../index.html";
+
+:root {
+  --navy: 207 41% 10%;
+  --navy-soft: 207 35% 16%;
+  --navy-deep: 210 42% 5%;
+  --gold: 39 48% 47%;
+  --gold-light: 40 55% 68%;
+  --gold-soft: 40 54% 90%;
+  --cream: 40 45% 97%;
+  --paper: 40 33% 94%;
+  --ink: 30 10% 11%;
+  --ink-soft: 32 8% 38%;
+  --on-navy: 40 50% 92%;
+  --on-navy-soft: 40 22% 72%;
+  --line: 38 30% 82%;
+}
+
+@theme inline {
+  --font-serif: 'PT Serif', Georgia, serif;
+  --font-display: 'Montserrat', system-ui, sans-serif;
+  --color-navy: hsl(var(--navy));
+  --color-navy-soft: hsl(var(--navy-soft));
+  --color-navy-deep: hsl(var(--navy-deep));
+  --color-gold: hsl(var(--gold));
+  --color-gold-light: hsl(var(--gold-light));
+  --color-gold-soft: hsl(var(--gold-soft));
+  --color-cream: hsl(var(--cream));
+  --color-paper: hsl(var(--paper));
+  --color-ink: hsl(var(--ink));
+  --color-ink-soft: hsl(var(--ink-soft));
+  --color-on-navy: hsl(var(--on-navy));
+  --color-on-navy-soft: hsl(var(--on-navy-soft));
+  --color-line: hsl(var(--line));
+  --color-card: hsl(0 0% 100%);
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background-color: hsl(var(--cream));
+    color: hsl(var(--ink));
+    font-family: var(--font-serif);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, h4 { font-family: var(--font-display); }
+  * { border-color: hsl(var(--line)); }
+}
+
+.hero-glow {
+  background: radial-gradient(120% 80% at 50% 0%, hsl(var(--navy-soft)) 0%, hsl(var(--navy)) 55%, hsl(var(--navy-deep)) 100%);
+}
+summary::-webkit-details-marker { display: none; }
