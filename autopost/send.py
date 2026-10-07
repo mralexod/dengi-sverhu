@@ -27,7 +27,45 @@ def today_msk():
     return (datetime.datetime.utcnow() + datetime.timedelta(hours=3)).date().isoformat()
 
 
+def api(token, method, **params):
+    url = f"https://api.telegram.org/bot{token}/{method}"
+    data = urllib.parse.urlencode(params).encode() if params else None
+    try:
+        with urllib.request.urlopen(url, data=data, timeout=30) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        return json.loads(e.read() or b"{}") or {"ok": False, "error_code": e.code}
+
+
+def check():
+    """Проверка бота: ничего не публикует, только спрашивает Telegram."""
+    token = os.environ.get("TG_BOT_TOKEN", "").strip()
+    if not token:
+        print("❌ Секрет TG_BOT_TOKEN пустой или не найден.")
+        sys.exit(1)
+    me = api(token, "getMe")
+    if not me.get("ok"):
+        print("❌ Telegram не принял токен:", me.get("description"), "— токен неверный или перевыпущен.")
+        sys.exit(1)
+    bot = me["result"]
+    print(f"✅ Токен рабочий: бот @{bot['username']} ({bot['first_name']})")
+    chat = os.environ.get("TG_CHAT", "@dengisverhu")
+    m = api(token, "getChatMember", chat_id=chat, user_id=bot["id"])
+    if not m.get("ok"):
+        print(f"❌ Бот не видит канал {chat}:", m.get("description"))
+        sys.exit(1)
+    r = m["result"]
+    print(f"Статус в канале {chat}: {r['status']}")
+    if r["status"] == "creator" or (r["status"] == "administrator" and r.get("can_post_messages")):
+        print("✅ Бот может публиковать посты в канал.")
+    else:
+        print("❌ У бота нет права «Публикация сообщений» — включите его в настройках администратора канала.")
+        sys.exit(1)
+
+
 def main():
+    if os.environ.get("CHECK") == "1":
+        return check()
     posts = json.loads(POSTS.read_text(encoding="utf-8"))
     sent = {line.strip() for line in SENT.read_text().splitlines() if line.strip()}
     today = today_msk()
