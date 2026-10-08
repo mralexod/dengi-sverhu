@@ -259,6 +259,9 @@ def main():
         mp = "\n".join(f"{it['n']}\t{code(it['n'])}\t{it['title']}" for it in items)
         write(os.path.join(os.environ.get("MAP_DIR", "/tmp"), "lazeyki-adresa.tsv"), mp + "\n")
     write(os.path.join(ROOT, "v2", "index.html"), REDIRECT.format(to=SITE))
+    gid = os.path.join(ROOT, "gid", "urls.txt")  # гиды (src/build_gid.py) не теряем при пересборке
+    if os.path.exists(gid):
+        urls += [u.strip() for u in open(gid, encoding="utf-8") if u.strip()]
     today = date.today()
     body = "".join(f"  <url><loc>{u}</loc><lastmod>{today}</lastmod></url>\n" for u in urls)
     write(os.path.join(ROOT, "sitemap.xml"), '<?xml version="1.0" encoding="UTF-8"?>\n'

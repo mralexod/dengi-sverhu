@@ -1,0 +1,17 @@
+name: Отправка страниц в поиск (IndexNow)
+
+on:
+  push:
+    branches: [main]
+    paths: ["sitemap.xml"]
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Подождать, пока GitHub Pages обновит сайт
+        run: sleep 90
+      - name: Отправить адреса из sitemap.xml
+        run: python3 src/indexnow.py
