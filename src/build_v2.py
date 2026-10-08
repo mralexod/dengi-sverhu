@@ -37,6 +37,9 @@ def buy(v="ghost", label=f"Купить книгу · {PRICE}", src="v2_main"):
     return f'<a href="{lava(src)}" target="_blank" rel="noopener" class="{b.BTN} {b.VAR[v]}">{CART}{label}</a>'
 
 
+SRC_SNIP = '<script>/* метка источника из ссылки (?utm_source= или ?from=) переходит в кнопки покупки */(function(){try{var p=new URLSearchParams(location.search);var s=p.get(\'utm_source\')||p.get(\'from\');if(!s)return;s=s.replace(/[^A-Za-z0-9_-]/g,\'\').slice(0,40);if(!s)return;document.querySelectorAll(\'a[href*="app.lava.top"]\').forEach(function(a){a.href=a.href.replace(/utm_source=[^&]*/,\'utm_source=\'+s)})}catch(e){}})();</script>'
+
+
 def main_page():
     if os.path.exists(os.path.join(ROOT, PDF_V2)):
         b.PDF = PDF_V2
@@ -59,6 +62,7 @@ def main_page():
     # шапка: ссылка на 38 лазеек
     h = re.sub(r'<a href="https://t\.me/dengisverhu"([^>]*)>(<svg.*?</svg>)Полная книга</a>',
                lambda m: f'<a href="{lava("v2_header")}"{m.group(1)}>{CART.replace("h-5 w-5", "h-4 w-4")}Купить · {PRICE}</a>', h, count=1, flags=re.S)
+    h = h.replace("</body>", SRC_SNIP + "</body>", 1)  # метка источника из ссылки → в кнопки покупки
     with open(os.path.join(ROOT, "index.html"), "w", encoding="utf-8") as f:
         f.write(h)
 
