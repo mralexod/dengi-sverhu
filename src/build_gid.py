@@ -95,6 +95,9 @@ def cta(it):
             f'<a href="{v.lava(src)}" target="_blank" rel="noopener">купить</a></p></div>')
 
 
+SRC_SNIP = "<script>/* метка источника (?utm_source=) переходит в ссылки на книгу и покупку */(function(){try{var s=new URLSearchParams(location.search).get('utm_source');if(!s)return;s=s.replace(/[^A-Za-z0-9_-]/g,'').slice(0,40);if(!s)return;document.querySelectorAll('a[href]').forEach(function(a){if(a.href.indexOf('app.lava.top')>-1)a.href=a.href.replace(/utm_source=[^&]*/,'utm_source='+s);else if(/dengi-sverhu\\/\\?from=/.test(a.href))a.href=a.href.replace(/\\?from=[^&#]*/,'?utm_source='+s)})}catch(e){}})();</script>"
+
+
 def page(it):
     url = f"{SITE}gid/{it['slug']}/"
     title = f"{it['title']} | «Деньги сверху»"
@@ -110,7 +113,7 @@ def page(it):
                           css=v.CSS + EXTRA_CSS)
             + f'<div class="top"><div class="w">{nav}<p class="k">{html.escape(it["cat"])} · гид</p>'
             f'<h1>{html.escape(it["title"])}</h1><p class="lead">{html.escape(it["desc"])}</p></div></div>'
-            f'<div class="w"><article>{render(it["body"], it.get("html", ""))}</article>{cta(it)}</div>' + v.foot())
+            f'<div class="w"><article>{render(it["body"], it.get("html", ""))}</article>{cta(it)}</div>' + v.foot().replace("</body>", SRC_SNIP + "</body>", 1))
 
 
 def hub(items):
