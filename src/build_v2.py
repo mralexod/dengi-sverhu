@@ -62,6 +62,9 @@ def main_page():
     # шапка: ссылка на 38 лазеек
     h = re.sub(r'<a href="https://t\.me/dengisverhu"([^>]*)>(<svg.*?</svg>)Полная книга</a>',
                lambda m: f'<a href="{lava("v2_header")}"{m.group(1)}>{CART.replace("h-5 w-5", "h-4 w-4")}Купить · {PRICE}</a>', h, count=1, flags=re.S)
+    # подвал: юр. страницы (privacy.html, terms.html)
+    h = h.replace('© 2026 · <a href="https://t.me/dengisverhu"', '© 2026 · <a href="privacy.html" class="text-on-navy-soft hover:text-gold-light">Политика конфиденциальности</a> · '
+                  '<a href="terms.html" class="text-on-navy-soft hover:text-gold-light">Условия использования</a> · <a href="https://t.me/dengisverhu"', 1)
     h = h.replace("</body>", SRC_SNIP + "</body>", 1)  # метка источника из ссылки → в кнопки покупки
     with open(os.path.join(ROOT, "index.html"), "w", encoding="utf-8") as f:
         f.write(h)
@@ -263,6 +266,7 @@ def main():
         mp = "\n".join(f"{it['n']}\t{code(it['n'])}\t{it['title']}" for it in items)
         write(os.path.join(os.environ.get("MAP_DIR", "/tmp"), "lazeyki-adresa.tsv"), mp + "\n")
     write(os.path.join(ROOT, "v2", "index.html"), REDIRECT.format(to=SITE))
+    urls += [SITE + x for x in ("privacy.html", "terms.html") if os.path.exists(os.path.join(ROOT, x))]  # юр. страницы
     gid = os.path.join(ROOT, "gid", "urls.txt")  # гиды (src/build_gid.py) не теряем при пересборке
     if os.path.exists(gid):
         urls += [u.strip() for u in open(gid, encoding="utf-8") if u.strip()]
