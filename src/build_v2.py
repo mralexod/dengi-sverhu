@@ -218,7 +218,8 @@ def nav():
 
 def foot():
     return (f'<footer>Книга «Деньги сверху. 38 лазеек к деньгам богатых для тех, кто начинает с нуля», автор — Ключник · '
-            f'<a href="{SITE}">mralexod.github.io/dengi-sverhu</a></footer></body></html>')
+            f'<a href="{SITE}">mralexod.github.io/dengi-sverhu</a><br><span style="opacity:.75;font-size:.85em">'
+            f'Материалы носят информационный характер. Цифры — рыночные ориентиры по данным книги и открытых источников, доход не гарантирован.</span></footer></body></html>')
 
 
 def lz_page(it):
