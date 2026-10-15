@@ -1,0 +1,24 @@
+name: Правка зеркал Telegraph (38-ФЗ)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "1 — только показать правку первой страницы"
+        default: "1"
+      limit:
+        description: "Сколько страниц обработать"
+        default: "1000"
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - name: Правка страниц
+        env:
+          TELEGRAPH_TOKEN: ${{ secrets.TELEGRAPH_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          LIMIT: ${{ inputs.limit }}
+        run: python3 src/telegraph_fix.py
