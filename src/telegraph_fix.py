@@ -40,9 +40,36 @@ def has_lava(n):
     return any(has_lava(c) for c in n.get("children", []))
 
 
+def trim_sale(p):
+    """Если в абзаце есть и ссылки на сайт, и хвост «Полная книга — 1 390 ₽ … купить», отрезать только хвост."""
+    kids = p.get("children", [])
+    if not any(isinstance(k, dict) and "dengi-sverhu" in (k.get("attrs") or {}).get("href", "") for k in kids):
+        return False
+    out = []
+    for i, k in enumerate(kids):
+        if isinstance(k, str):
+            m = re.search(r"[.;]?\s*(Полная книга|Книга целиком|Купить|\d[\d ]* ₽)", k)
+            if m:
+                head = k[:m.start()].rstrip(" .,;:—")
+                if head:
+                    out.append(head)
+                out.append(".")
+                p["children"] = out
+                return True
+        elif "lava.top" in (k.get("attrs") or {}).get("href", ""):
+            p["children"] = out + ["."]
+            return True
+        out.append(k)
+    return False
+
+
 def fix(nodes, slug):
     out, changed = [], False
     for n in nodes:
+        if isinstance(n, dict) and n.get("tag") == "p" and has_lava(n) and trim_sale(n):
+            changed = True
+            out.append(n)
+            continue
         if isinstance(n, dict) and (has_lava(n) or "1 390" in text_of(n)):
             if isinstance(n, dict) and n.get("tag") in ("p", "blockquote", "h4", "h3", "aside", "figure", "ul", "ol"):
                 changed = True
