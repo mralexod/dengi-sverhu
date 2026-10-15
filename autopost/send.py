@@ -21,6 +21,7 @@ import urllib.request
 HERE = pathlib.Path(__file__).parent
 POSTS = HERE / "posts.json"
 SENT = HERE / "sent.txt"
+IDS = HERE / "message_ids.json"  # номер поста → message_id в канале (для правок)
 
 
 def today_msk():
@@ -98,8 +99,34 @@ def main():
         sys.exit(1)
     with SENT.open("a") as f:
         f.write(f"{post['n']}\n")
-    print("Опубликовано, message_id =", answer["result"]["message_id"])
+    mid = answer["result"]["message_id"]
+    ids = json.loads(IDS.read_text()) if IDS.exists() else {}
+    ids[str(post["n"])] = mid
+    IDS.write_text(json.dumps(ids, indent=1))
+    print("Опубликовано, message_id =", mid)
+
+
+def edit_sent():
+    """Переписать уже опубликованные посты текстом из posts.json (EDIT=1)."""
+    token = os.environ.get("TG_BOT_TOKEN", "").strip()
+    chat = os.environ.get("TG_CHAT", "@dengisverhu")
+    posts = {str(p["n"]): p for p in json.loads(POSTS.read_text())}
+    ids = json.loads(IDS.read_text())
+    ok = 0
+    for n, mid in sorted(ids.items(), key=lambda x: int(x[0])):
+        r = api(token, "editMessageText", chat_id=chat, message_id=mid, text=posts[n]["text"])
+        if r.get("ok"):
+            ok += 1
+            print(f"✅ пост {n} (message_id {mid}) переписан")
+        elif "not modified" in str(r.get("description", "")):
+            print(f"— пост {n}: текст уже совпадает")
+        else:
+            print(f"❌ пост {n} (message_id {mid}):", r.get("description"))
+    print(f"Итог: переписано {ok} из {len(ids)}")
 
 
 if __name__ == "__main__":
-    main()
+    if os.environ.get("EDIT") == "1":
+        edit_sent()
+    else:
+        main()

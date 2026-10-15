@@ -13,6 +13,10 @@ on:
         description: "Только проверить бота (ничего не публиковать)"
         type: boolean
         default: false
+      edit_sent:
+        description: "Переписать уже опубликованные посты текстом из posts.json"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -30,13 +34,14 @@ jobs:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
           CHECK: ${{ github.event_name == 'workflow_dispatch' && inputs.check_bot && '1' || '0' }}
+          EDIT: ${{ github.event_name == 'workflow_dispatch' && inputs.edit_sent && '1' || '0' }}
         run: python3 autopost/send.py
       - name: Запомнить отправленное
         run: |
-          if ! git diff --quiet autopost/sent.txt; then
+          if ! git diff --quiet autopost/sent.txt autopost/message_ids.json; then
             git config user.name "autopost"
             git config user.email "autopost@users.noreply.github.com"
-            git add autopost/sent.txt
+            git add autopost/sent.txt autopost/message_ids.json
             git commit -m "Автопостинг: отмечен отправленный пост"
             git push
           fi
