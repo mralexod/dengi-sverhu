@@ -1,0 +1,21 @@
+name: Проверка ссылок (код ответа)
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "Адреса через пробел"
+        required: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Коды ответа
+        env:
+          URLS: ${{ inputs.urls }}
+        run: |
+          fail=0
+          for u in $URLS; do
+            c=$(curl -s -o /dev/null -w '%{http_code}' -L --max-time 20 "$u")
+            echo "$c $u"; [ "$c" = "200" ] || fail=1
+          done
+          exit $fail
