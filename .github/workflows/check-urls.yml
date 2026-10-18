@@ -5,6 +5,10 @@ on:
       urls:
         description: "Адреса через пробел"
         required: true
+      contains:
+        description: "Необязательно: строка, которая должна быть в каждой странице"
+        required: false
+        default: ""
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -12,10 +16,15 @@ jobs:
       - name: Коды ответа
         env:
           URLS: ${{ inputs.urls }}
+          NEED: ${{ inputs.contains }}
         run: |
           fail=0
           for u in $URLS; do
             c=$(curl -s -o /dev/null -w '%{http_code}' -L --max-time 20 "$u")
-            echo "$c $u"; [ "$c" = "200" ] || fail=1
+            has=""
+            if [ -n "$NEED" ]; then
+              if curl -s -L --max-time 20 "$u" | grep -qF "$NEED"; then has=" · есть «$NEED»"; else has=" · НЕТ «$NEED»"; fail=1; fi
+            fi
+            echo "$c $u$has"; [ "$c" = "200" ] || fail=1
           done
           exit $fail
