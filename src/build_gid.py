@@ -157,3 +157,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    import add_metrika; add_metrika.run()  # счётчик Метрики во все страницы
