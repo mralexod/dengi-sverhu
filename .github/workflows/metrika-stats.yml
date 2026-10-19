@@ -1,0 +1,40 @@
+name: Статистика Метрики (снимок для Claude)
+# Каждое утро кладёт в seo/metrika/ сводку за 7 дней: источники, метки UTM, страницы входа.
+# Нужен секрет METRIKA_TOKEN (OAuth-токен Яндекса с правом metrika:read).
+on:
+  schedule:
+    - cron: "30 3 * * *"   # 06:30 МСК, до утреннего захода директора
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Выгрузка
+        env:
+          TOKEN: ${{ secrets.METRIKA_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "::error::Нет секрета METRIKA_TOKEN"; exit 1; fi
+          D=$(TZ=Europe/Moscow date +%F); mkdir -p seo/metrika
+          API="https://api-metrika.yandex.net/stat/v1/data?ids=113667184&date1=7daysAgo&date2=today&limit=100&accuracy=full"
+          M="ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:avgVisitDurationSeconds,ym:s:pageDepth"
+          get() { curl -sS -f -H "Authorization: OAuth $TOKEN" "$API&metrics=$M&dimensions=$1" ; }
+          {
+            echo '{"дата":"'$D'","период":"7 дней",'
+            echo '"итого_по_дням":'; get "ym:s:date"; echo ','
+            echo '"источники":'; get "ym:s:lastTrafficSource"; echo ','
+            echo '"utm_source":'; get "ym:s:UTMSource"; echo ','
+            echo '"страницы_входа":'; get "ym:s:startURL"; echo ','
+            echo '"сайты_источники":'; get "ym:s:lastReferalSource"
+            echo '}'
+          } > seo/metrika/$D.json
+          python3 -c "import json,sys; json.load(open('seo/metrika/$D.json'))"
+      - name: Коммит
+        run: |
+          git config user.name "metrika-bot"; git config user.email "actions@github.com"
+          git add seo/metrika && git commit -m "Метрика: снимок $(TZ=Europe/Moscow date +%F)" || exit 0
+          git pull --rebase -q origin main && git push -q origin HEAD:main
