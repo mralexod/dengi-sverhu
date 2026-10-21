@@ -3,7 +3,7 @@ name: Статистика Метрики (снимок для Claude)
 # Нужен секрет METRIKA_TOKEN (OAuth-токен Яндекса с правом metrika:read).
 on:
   schedule:
-    - cron: "30 3 * * *"   # 06:30 МСК, до утреннего захода директора
+    - cron: "17 0 * * *"   # 03:17 МСК: у GitHub cron опаздывает до 5 ч, поэтому с запасом до захода 07:45
   workflow_dispatch:
 
 permissions:
