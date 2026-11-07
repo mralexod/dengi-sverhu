@@ -65,9 +65,47 @@ def main_page():
     # подвал: юр. страницы (privacy.html, terms.html)
     h = h.replace('© 2026 · <a href="https://t.me/dengisverhu"', '© 2026 · <a href="privacy.html" class="text-on-navy-soft hover:text-gold-light">Политика конфиденциальности</a> · '
                   '<a href="terms.html" class="text-on-navy-soft hover:text-gold-light">Условия использования</a> · <a href="https://t.me/dengisverhu"', 1)
+    h = insert_guides(h)
     h = h.replace("</body>", SRC_SNIP + "</body>", 1)  # метка источника из ссылки → в кнопки покупки
     with open(os.path.join(ROOT, "index.html"), "w", encoding="utf-8") as f:
         f.write(h)
+
+
+# ---------- блок «Гиды» на главной: перелинковка с 141 гидом (для SEO и GEO) ----------
+GUIDE_PICKS = [
+    ("repetitor-dorogie-ucheniki", "Репетитору: как перейти на дорогих учеников"),
+    ("manikyur-na-domu-premium", "Мастеру маникюра: выезд к обеспеченным клиенткам"),
+    ("detejling-studiya-klienty", "Детейлинг-студии: как получить клиентов из бизнес-класса"),
+    ("personalnyy-trener-premium", "Персональному тренеру: здоровье как статус"),
+    ("administrator-salona-ii-pomoshchnik", "Администратору салона: путь к управляющему домом"),
+    ("arhitektor-zagorodnye-doma", "Архитектору: загородные дома для состоятельных"),
+    ("dizayner-interera-partnery", "Дизайнеру интерьера: партнёрства с дорогими подрядчиками"),
+    ("bukhgalter-bek-ofis-semi", "Бухгалтеру: бэк-офис семьи с деньгами"),
+    ("odin-chas-v-den-svoe-delo", "Один час в день: можно ли начать своё дело"),
+    ("pochemu-bogatye-ne-torguyutsya", "Почему богатые не торгуются"),
+    ("sarafannoe-radio-bogatyh", "Сарафанное радио богатых: как оно работает"),
+    ("odno-okno-svoy-chelovek-na-vse", "«Одно окно»: свой человек на всё"),
+]
+
+
+def insert_guides(h):
+    """Вставляет перед секцией с фрагментом блок ссылок на гиды — иначе они висят в изоляции."""
+    anchor = '<section id="fragment"'
+    if anchor not in h:
+        return h
+    cards = "".join(
+        f'<li><a class="font-semibold text-navy underline decoration-gold underline-offset-4 hover:text-gold" '
+        f'href="{SITE}gid/{slug}/">{t}</a></li>' for slug, t in GUIDE_PICKS)
+    block = (f'<section class="border-t bg-paper"><div class="mx-auto max-w-5xl px-5 py-20">'
+             f'<p class="font-display text-xs font-semibold uppercase tracking-[0.3em] text-gold">Гиды по книге</p>'
+             f'<h2 class="mt-3 text-3xl font-extrabold text-navy md:text-4xl">Как это выглядит на практике</h2>'
+             f'<p class="mt-4 max-w-2xl text-lg leading-relaxed text-ink-soft">141 практический гид: конкретная '
+             f'профессия, где искать состоятельных клиентов, сколько они платят и что делать в первую неделю.</p>'
+             f'<ul class="mt-8 grid gap-3 sm:grid-cols-2">{cards}</ul>'
+             f'<p class="mt-8"><a class="font-display text-sm font-bold uppercase tracking-[0.15em] text-navy underline '
+             f'decoration-gold underline-offset-4" href="{SITE}gid/">Все 141 гид →</a></p>'
+             f'</div></section>')
+    return h.replace(anchor, block + anchor, 1)
 
 
 # ---------- 38 страниц лазеек ----------
@@ -271,6 +309,12 @@ def main():
     gid = os.path.join(ROOT, "gid", "urls.txt")  # гиды (src/build_gid.py) не теряем при пересборке
     if os.path.exists(gid):
         urls += [u.strip() for u in open(gid, encoding="utf-8") if u.strip()]
+    # адреса глав-тизеров собираются только при наличии BOOK_DIR — не теряем их при пересборке
+    sm_path = os.path.join(ROOT, "sitemap.xml")
+    if os.path.exists(sm_path):
+        for loc in re.findall(r"<loc>(.*?)</loc>", open(sm_path, encoding="utf-8").read()):
+            if re.search(r"/[a-z0-9]{13,14}/$", loc) and loc not in urls:
+                urls.append(loc)
     today = date.today()
     body = "".join(f"  <url><loc>{u}</loc><lastmod>{today}</lastmod></url>\n" for u in urls)
     write(os.path.join(ROOT, "sitemap.xml"), '<?xml version="1.0" encoding="UTF-8"?>\n'

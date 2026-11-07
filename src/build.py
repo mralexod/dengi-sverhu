@@ -5,6 +5,7 @@
   npx @tailwindcss/cli -i src/input.css -o assets/styles.css --minify
 """
 import os
+import re as _re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE_URL = os.environ.get("SITE_URL", "https://mralexod.github.io/dengi-sverhu/")
@@ -111,6 +112,11 @@ def page():
         f'<meta name="google-site-verification" content="{VERIFY_GOOGLE}">' if VERIFY_GOOGLE else "",
     ])
     LDJSON = ldjson()
+    import json as _j
+    FAQJSON = _j.dumps({"@context": "https://schema.org", "@type": "FAQPage",
+                        "mainEntity": [{"@type": "Question", "name": _re.sub(r"<[^>]+>", "", q),
+                                        "acceptedAnswer": {"@type": "Answer", "text": _re.sub(r"<[^>]+>", "", a)}}
+                                       for q, a in FAQ]}, ensure_ascii=False)
     badges = "".join(f'<span class="rounded-full border border-gold/40 px-4 py-1.5 font-display text-xs font-semibold uppercase tracking-[0.15em] text-gold-light">{b}</span>'
                      for b in ["Без вложений", "Без связей", "Без опыта", "Законно"])
     stats = "".join(f'<div><div class="font-display text-3xl font-extrabold text-navy md:text-4xl">{n}</div><div class="mt-1 text-sm text-ink-soft">{t}</div></div>' for n, t in STATS)
@@ -140,6 +146,7 @@ def page():
 <link rel="canonical" href="{SITE_URL}">
 {VERIFY}
 <script type="application/ld+json">{LDJSON}</script>
+<script type="application/ld+json">{FAQJSON}</script>
 <link rel="icon" type="image/png" href="{COVER}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -34,6 +34,15 @@ th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-ali
 .rel{margin:0 0 30px;font-size:16px}
 .hub h2{font-size:22px;margin:1.8em 0 .6em}.hub ul{list-style:none;padding:0;display:grid;gap:10px}
 .hub a{text-decoration:none;border-bottom:1px solid var(--gold)}.hub p{margin:.2em 0 0;font-size:15px;color:var(--soft)}
+.box details{border-top:1px solid var(--line);padding:14px 0}
+.box details:first-of-type{border-top:0}
+.box summary{cursor:pointer;list-style:none}
+.box summary::-webkit-details-marker{display:none}
+.box summary b{font-family:Montserrat,sans-serif;font-size:17px;color:#0f1a24}
+.box summary::after{content:" +";color:var(--gold);font-weight:700}
+.box details[open] summary::after{content:" −"}
+.box details p{margin:10px 0 0;color:var(--soft)}
+.box ul{margin:0;padding-left:1.1em}
 """
 
 
@@ -75,7 +84,8 @@ def render(body, extra_html=""):
         elif all(l.startswith("- ") for l in lines):
             out.append("<ul>" + "".join(f"<li>{inline(l[2:])}</li>" for l in lines) + "</ul>")
         elif all(re.match(r"\d+\. ", l) for l in lines):
-            out.append("<ol>" + "".join(f"<li>{inline(re.sub(r'^\d+\. ', '', l))}</li>" for l in lines) + "</ol>")
+            items = "".join("<li>" + inline(re.sub(r"^\d+\. ", "", l)) + "</li>" for l in lines)
+            out.append("<ol>" + items + "</ol>")
         else:
             out.append("<p>" + "<br>".join(inline(l) for l in lines) + "</p>")
     return "".join(out)
@@ -98,7 +108,31 @@ def cta(it):
 SRC_SNIP = "<script>/* метка источника (?utm_source=) переходит в ссылки на книгу и покупку */(function(){try{var s=new URLSearchParams(location.search).get('utm_source');if(!s)return;s=s.replace(/[^A-Za-z0-9_-]/g,'').slice(0,40);if(!s)return;document.querySelectorAll('a[href]').forEach(function(a){if(a.href.indexOf('app.lava.top')>-1)a.href=a.href.replace(/utm_source=[^&]*/,'utm_source='+s);else if(/dengi-sverhu\\/\\?from=/.test(a.href))a.href=a.href.replace(/\\?from=[^&#]*/,'?utm_source='+s)})}catch(e){}})();</script>"
 
 
-def page(it):
+def faq_from_body(body, limit=5):
+    """Собирает пары «подзаголовок → первый абзац под ним» для блока FAQ и разметки FAQPage."""
+    out = []
+    for block in re.split(r"\n\s*\n", body.strip()):
+        lines = [l for l in block.strip().split("\n") if l.strip()]
+        if not lines or not lines[0].startswith("## "):
+            continue
+        q = lines[0][3:].strip()
+        ans = " ".join(l.lstrip("- ").strip() for l in lines[1:] if not l.startswith("|"))
+        ans = re.sub(r"\*\*(.+?)\*\*", r"\1", ans).strip()
+        if q and len(ans) > 40:
+            out.append((q, ans))
+        if len(out) >= limit:
+            break
+    return out
+
+
+def related(items, it, n=4):
+    """Похожие гиды: та же категория, кроме текущего."""
+    same = [i for i in items if i["cat"] == it["cat"] and i["slug"] != it["slug"]]
+    return same[:n]
+
+
+def page(it, items=None):
+    items = items or []
     url = f"{SITE}gid/{it['slug']}/"
     title = f"{it['title']} | «Деньги сверху»"
     ld = json.dumps({"@context": "https://schema.org", "@type": "Article", "headline": it["title"],
@@ -107,13 +141,39 @@ def page(it):
                      "author": {"@type": "Person", "name": "Ключник"},
                      "isPartOf": {"@type": "Book", "name": "Деньги сверху", "author": {"@type": "Person", "name": "Ключник"},
                                   "url": SITE}}, ensure_ascii=False)
+    pairs = faq_from_body(it["body"])
+    ld_extra = ""
+    if pairs:
+        ld_extra += '<script type="application/ld+json">' + json.dumps(
+            {"@context": "https://schema.org", "@type": "FAQPage",
+             "mainEntity": [{"@type": "Question", "name": q,
+                             "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in pairs]},
+            ensure_ascii=False) + '</script>'
+    ld_extra += '<script type="application/ld+json">' + json.dumps(
+        {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Деньги сверху", "item": SITE},
+            {"@type": "ListItem", "position": 2, "name": "Гиды", "item": SITE + "gid/"},
+            {"@type": "ListItem", "position": 3, "name": it["title"], "item": url}]},
+        ensure_ascii=False) + '</script>'
+    faq_html = ""
+    if pairs:
+        faq_html = ('<div class="box"><h2>Частые вопросы</h2>' +
+                    "".join(f"<details><summary><b>{html.escape(q)}</b></summary><p>{inline(a)}</p></details>"
+                            for q, a in pairs) + "</div>")
+    rel = related(items, it)
+    rel_html = ""
+    if rel:
+        rel_html = ('<div class="box"><h2>Смотрите также</h2><ul>' +
+                    "".join(f'<li><a href="{SITE}gid/{r["slug"]}/">{html.escape(r["title"])}</a></li>' for r in rel) +
+                    "</ul></div>")
     nav = (f'<div class="nav"><a href="{SITE}">Деньги сверху · Ключник</a>'
            f'<a href="{SITE}gid/">Все гиды</a></div>')
     return (v.HEAD.format(title=html.escape(title), desc=html.escape(it["desc"]), url=url, site=SITE, ld=ld,
                           css=v.CSS + EXTRA_CSS)
             + f'<div class="top"><div class="w">{nav}<p class="k">{html.escape(it["cat"])} · гид</p>'
             f'<h1>{html.escape(it["title"])}</h1><p class="lead">{html.escape(it["desc"])}</p></div></div>'
-            f'<div class="w"><article>{render(it["body"], it.get("html", ""))}</article>{cta(it)}</div>' + v.foot().replace("</body>", SRC_SNIP + "</body>", 1))
+            f'<div class="w"><article>{render(it["body"], it.get("html", ""))}</article>{faq_html}{rel_html}{cta(it)}</div>'
+            + ld_extra + v.foot().replace("</body>", SRC_SNIP + "</body>", 1))
 
 
 def hub(items):
@@ -143,7 +203,7 @@ def hub(items):
 def main():
     items = load()
     for it in items:
-        v.write(os.path.join(ROOT, "gid", it["slug"], "index.html"), page(it))
+        v.write(os.path.join(ROOT, "gid", it["slug"], "index.html"), page(it, items))
     v.write(os.path.join(ROOT, "gid", "index.html"), hub(items))
     urls = [f"{SITE}gid/"] + [f"{SITE}gid/{i['slug']}/" for i in items]
     v.write(os.path.join(ROOT, "gid", "urls.txt"), "\n".join(urls) + "\n")
